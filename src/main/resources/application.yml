@@ -1,0 +1,13 @@
+# Configuracoes do banco de dados
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hologistica
+    driver-class-name: org.postgresql.Driver
+    password: pgtestes
+    username: postgres
+  jpa:
+    show-sql: true
+
+# obs: tive que converter o application.properties para yml para funcionar.
+# obs: criado o banco de dados no pgAdmin.
+# obs: para setar o timezone: ALTER DATABASE hologistica SET timezone TO 'UTC'.
