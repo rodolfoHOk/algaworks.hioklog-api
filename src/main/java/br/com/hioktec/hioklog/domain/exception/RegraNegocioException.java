@@ -1,10 +1,10 @@
 package br.com.hioktec.hioklog.domain.exception;
 
-public class NegocioException extends RuntimeException {
+public class RegraNegocioException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 	
-	public NegocioException(String message) {
+	public RegraNegocioException(String message) {
 		super(message);
 	}
 }
