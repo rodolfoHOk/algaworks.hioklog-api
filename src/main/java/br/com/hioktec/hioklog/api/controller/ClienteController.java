@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.hioktec.hioklog.api.assembler.ClienteAssembler;
+import br.com.hioktec.hioklog.api.model.request.ClienteRequest;
+import br.com.hioktec.hioklog.api.model.response.ClienteResponse;
 import br.com.hioktec.hioklog.domain.model.Cliente;
 import br.com.hioktec.hioklog.domain.repository.ClienteRepository;
 import br.com.hioktec.hioklog.domain.service.CatalogoClienteService;
@@ -26,68 +29,44 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/clientes")
 public class ClienteController {
 	
-	/* Somente com Jakarta Persistence sem spring-data-jpa
-	@PersistenceContext
-	private EntityManager manager;
-	
-	@GetMapping("/clientes")
-	public List<Cliente> listar() {
-		return manager.createQuery("from Cliente", Cliente.class)
-				.getResultList();
-	}
-	*/
-	
-	// @Autowired para facilitar o mock para testes não anotamos diretamente no atributo e fazemos a injeção no construtor
 	private ClienteRepository clienteRepository;
 	
 	private CatalogoClienteService catalogoClienteService;
 	
+	private ClienteAssembler clienteAssembler;
+	
 	@GetMapping
-	public List<Cliente> listar() {
-		return clienteRepository.findAll();
+	public List<ClienteResponse> listar() {
+		return clienteAssembler.toCollectionModel(clienteRepository.findAll());
 	}
 	
 	@GetMapping("/{clienteId}")
-	public ResponseEntity<Cliente> buscar(@PathVariable Long clienteId) {
-		/* maneira não resumida
-		Optional<Cliente> cliente = clienteRepository.findById(clienteId);
-			
-		if (cliente.isPresent()) {
-			return ResponseEntity.ok(cliente.get());
-		} 
-		
-		return ResponseEntity.notFound().build();
-		*/
-		
-		/* ou ainda
+	public ResponseEntity<ClienteResponse> buscar(@PathVariable Long clienteId) {
 		return clienteRepository.findById(clienteId)
-				.map(cliente -> ResponseEntity.ok(cliente))
-				.orElse(ResponseEntity.notFound().build());
-		*/
-		
-		return clienteRepository.findById(clienteId)
-				.map(ResponseEntity::ok)
+				.map(cliente -> ResponseEntity.ok(clienteAssembler.toModel(cliente)))
 				.orElse(ResponseEntity.notFound().build());
 	}
 	
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	public Cliente adicionar(@Valid @RequestBody Cliente cliente) {
-		// return clienteRepository.save(cliente);
-		return catalogoClienteService.salvar(cliente);
+	public ClienteResponse adicionar(@Valid @RequestBody ClienteRequest clienteRequest) {
+		Cliente clienteSalvo = catalogoClienteService.salvar(clienteAssembler.toEntity(clienteRequest));
+		
+		return clienteAssembler.toModel(clienteSalvo);
 	}
 	
 	@PutMapping("/{clienteId}")
-	public ResponseEntity<Cliente> atualizar(@PathVariable Long clienteId, @Valid @RequestBody Cliente cliente){
+	public ResponseEntity<ClienteResponse> atualizar(@PathVariable Long clienteId, @Valid @RequestBody ClienteRequest clienteRequest){
 		if (!clienteRepository.existsById(clienteId)) {
 			return ResponseEntity.notFound().build();
 		}
 		
+		Cliente cliente = clienteAssembler.toEntity(clienteRequest);
 		cliente.setId(clienteId);
-		// var clienteSalvo = clienteRepository.save(cliente);
+		
 		var clienteSalvo = catalogoClienteService.salvar(cliente);
 		
-		return ResponseEntity.ok(clienteSalvo);
+		return ResponseEntity.ok(clienteAssembler.toModel(clienteSalvo));
 	}
 	
 	@DeleteMapping("/{clienteId}")
@@ -96,7 +75,6 @@ public class ClienteController {
 			return ResponseEntity.notFound().build();
 		}
 		
-		// clienteRepository.deleteById(clienteId);
 		catalogoClienteService.excluir(clienteId);
 		
 		return ResponseEntity.noContent().build();
